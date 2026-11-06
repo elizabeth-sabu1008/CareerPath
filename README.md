@@ -1,212 +1,157 @@
-# CareerPath: Classroom to Career 🚀
+# CareerPath: Classroom to Career
 
-**CareerPath: Classroom to Career** is an inclusive, full-stack career guidance platform designed for students and career-switchers. Built with accessibility and equity at its foundation, CareerPath surfaces accessibility accommodations, verified DEI workplace ratings, "Welcome to Non-Traditional Backgrounds" badges, and 1-on-1 mentorship with leaders from underrepresented communities.
+An inclusive career guidance web app that helps students discover careers that fit their strengths. Users sign in with Google, take a short aptitude quiz, and get ranked career matches with salary estimates, market demand, accessibility features and a "welcomes non-traditional backgrounds" flag. They can then explore a roadmap and browse a mentor network.
 
----
+## Why CareerPath
 
-## 🌟 Key Features
+Most career tools only ask "what are you good at?" CareerPath also asks "where will you be supported?" Every career track carries inclusivity data (accessibility features, DEI rating, openness to self-taught and bootcamp graduates), and mentors are listed with their pronouns and the communities they mentor, such as Women in Tech, LGBTQ+, First-gen Tech and Career Transitioners.
 
-1. **Inclusive 12-Statement Aptitude Quiz**
-   - 3 statements per trait: **Analytical**, **Creative**, **Social**, and **Technical**.
-   - 5-point Likert scale (Strongly Disagree to Strongly Agree).
-   - Real-time step progress indicator with accessible ARIA landmarks.
-   - Retake capability and dynamic algorithmic scoring.
+## Features
 
-2. **Algorithmic Career Matching (Manhattan Distance)**
-   - Scales trait scores to 1–5 and calculates Manhattan distance against ideal career profiles.
-   - Surfaces the Top 3 matches with match percentage badges.
-   - Enriches tracks with market demand and salary estimations via LinkedIn Analytics API (with resilient offline fallbacks).
-   - "✨ Non-Traditional Welcome" flags and accessibility accommodations (screen reader support, neurodivergent pacing, asynchronous communication, etc.).
+- **Google sign-in** with Firebase Authentication; user profiles are synced to MongoDB on first login.
+- **Career Aptitude Quiz**: 12 statements covering four traits (analytical, creative, social, technical), with a step progress indicator and a retake option.
+- **Career Matches**: the top 3 careers ranked by closeness to the user's trait profile, enriched with a market tag and salary estimate.
+- **Inclusivity badges**: non-traditional-path welcome and accessibility features shown on every match.
+- **Academic Roadmap**: a year-by-year timeline from foundations to capstone.
+- **Mentor Network**: mentor cards with role, company, pronouns and mentorship focus.
+- **Resilient backend**: falls back to an in-memory MongoDB (auto-seeded) if no cloud database is configured, and falls back to default market data if the LinkedIn API is unavailable.
 
-3. **Visual Roadmap & Timeline**
-   - Vertical numbered timeline with gradient circular markers and connecting line.
-   - Concrete milestones across foundational and production phases.
-   - Required skills grouped by industry priority: **Critical MUST**, **High MUST/GOOD**, and **Medium GOOD/BONUS**.
-   - Career selector dropdown with a universal **4-Year Academic Pathway** default.
-   - Direct CTA to connect with specialized mentors.
+## Tech Stack
 
-4. **Diverse & Inclusive Mentorship Network**
-   - Mentors filterable by focus: **Women in Tech**, **Career Transitioners**, **First-gen Tech**, **Bootcamp Grads**, and **LGBTQ+**.
-   - Experience, skills, pronouns, and company affiliations displayed prominently.
-   - Interactive 1-on-1 session booking system with instant confirmation.
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 19, Vite, React Router 7, plain CSS (glassmorphism theme, Outfit font) |
+| Authentication | Firebase Authentication (Google provider), Firebase Admin SDK for token verification |
+| Backend | Node.js, Express 5 |
+| Database | MongoDB with Mongoose (MongoDB Atlas, or `mongodb-memory-server` as a local fallback) |
+| External data | LinkedIn job analytics API (optional, with fallback) |
 
-5. **Universal Design & Accessibility First**
-   - WCAG AA contrast ratio compliance throughout.
-   - Semantic landmarks (`<header>`, `<nav>`, `<main>`, `<article>`, `<section>`, `<footer>`).
-   - High-contrast `:focus-visible` keyboard rings.
-   - Full keyboard accessibility and support for `prefers-reduced-motion`.
-   - Dark glassmorphism theme with 30px subtle grid and custom CSS variables.
+## How Matching Works
 
----
+1. Each quiz trait has 3 questions scored 1 to 5, so each trait total is between 3 and 15.
+2. The backend divides each total by 3 to get a 1 to 5 scale.
+3. For every career it computes the sum of absolute differences between the user's scores and the career's `idealTraits`.
+4. Careers are sorted by lowest distance (closest match first) and the top 3 are returned.
+5. Each result is enriched with a market tag and salary estimate from LinkedIn; if that call fails, defaults are used so matching never breaks.
 
-## 🛠️ Tech Stack
-
-- **Frontend**:
-  - React 19 + Vite
-  - React Router DOM v7
-  - Firebase Web SDK v11 (Google Sign-In)
-  - Custom Pure CSS (No external UI libraries or CSS frameworks)
-  - Google Font: *Outfit*
-
-- **Backend**:
-  - Node.js (CommonJS)
-  - Express 5
-  - Mongoose 8
-  - CORS, Dotenv, Axios
-  - Firebase Admin SDK
-  - MongoDB Memory Server (automatic zero-config fallback and auto-seed)
-
-- **Database**:
-  - MongoDB via `MONGO_URI`
-  - Automatic fallback to `mongodb-memory-server` if connection fails or `MONGO_URI` is omitted.
-
----
-
-## 📁 Repository Layout
+## Project Structure
 
 ```
 CareerPath/
 ├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   ├── db.js             # MongoDB connection & memory-server fallback
-│   │   │   └── firebase.js       # Firebase Admin initialization
-│   │   ├── middleware/
-│   │   │   └── auth.js           # Firebase ID token verification middleware
-│   │   ├── models/
-│   │   │   ├── CareerTrack.js    # Career schema with idealTraits & roadmap
-│   │   │   ├── Mentor.js         # Mentor schema with focus & availability
-│   │   │   └── User.js           # User schema with quiz & saved careers
-│   │   ├── routes/
-│   │   │   ├── careerRoutes.js   # /api/careers/matches & /api/careers/:id
-│   │   │   ├── mentorRoutes.js   # /api/mentors
-│   │   │   └── userRoutes.js     # /api/users (sync, quiz, saved, book)
-│   │   ├── services/
-│   │   │   ├── linkedin.js       # LinkedIn market data enrichment
-│   │   │   └── seedData.js       # 5 inclusive careers & 3 mentors
-│   │   ├── seed.js               # Standalone idempotent database seed script
-│   │   └── server.js             # Express app entrypoint
-│   ├── .env.example
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── CareerCard.jsx    # Career card with DEI & accessibility tags
-│   │   │   ├── MentorCard.jsx    # Mentor profile card
-│   │   │   ├── Navbar.jsx        # Navigation header with active state
-│   │   │   └── QuizComponent.jsx # 12-statement Likert quiz
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx   # Auth provider (Google sign-in + demo mode)
-│   │   ├── pages/
-│   │   │   ├── AuthGatePage.jsx  # Unauthenticated landing gate
-│   │   │   ├── DashboardPage.jsx # Home dashboard & quiz
-│   │   │   ├── MatchesPage.jsx   # Top 3 algorithmic matches
-│   │   │   ├── MentorsPage.jsx   # Mentor directory & session booking
-│   │   │   └── RoadmapPage.jsx   # Vertical timeline & grouped skills
-│   │   ├── services/
-│   │   │   └── api.js            # Unified API client using VITE_API_URL
-│   │   ├── App.jsx               # Route definitions with catch-all redirect
-│   │   ├── index.css             # Glassmorphism design system & variables
-│   │   └── main.jsx
-│   ├── .env.example
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
-├── .gitignore
-└── README.md
+│   ├── config/firebase.js        # Firebase Admin initialisation
+│   ├── middleware/auth.js        # Verifies Firebase ID tokens
+│   ├── models/                   # Career, Mentor, User (Mongoose schemas)
+│   ├── routes/                   # careerRoutes, mentorRoutes, userRoutes
+│   ├── utils/seed.js             # Sample careers and mentors
+│   ├── runSeed.js                # Seed a configured MongoDB database
+│   └── server.js                 # Express app entry point
+└── frontend/
+    └── src/
+        ├── components/           # Login, Navbar, Quiz, Matches, Roadmap, Mentors
+        ├── firebase.js           # Firebase client setup
+        ├── App.jsx               # Auth gate and routing
+        └── index.css             # Theme and shared styles
 ```
 
----
+## Getting Started
 
-## 🚀 Quick Start Guide
+### Prerequisites
 
-### 1. Prerequisites
-- Node.js (v18.0.0 or higher)
-- npm (v9.0.0 or higher)
+- Node.js 18 or later
+- A Firebase project with Google sign-in enabled
+- (Optional) A MongoDB Atlas connection string. Without one, the app uses an in-memory database.
 
----
+### 1. Clone and install
 
-### 2. Configure Environment Variables
-
-#### Backend (`/backend/.env`)
-Copy `backend/.env.example` to `backend/.env`:
 ```bash
-cp backend/.env.example backend/.env
+git clone <your-repo-url>
+cd CareerPath
+
+cd backend && npm install
+cd ../frontend && npm install
 ```
-Key variables:
-- `PORT=5000`
-- `CORS_ORIGIN=http://localhost:5173`
-- `MONGO_URI`: MongoDB connection string. **Leave empty to automatically launch in-memory MongoDB!**
-- `LINKEDIN_ACCESS_TOKEN`: *(Optional)* Falls back cleanly to `₹8-40L` and `High demand`.
-- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`: Service account credentials for server-side token verification.
 
-#### Frontend (`/frontend/.env`)
-Copy `frontend/.env.example` to `frontend/.env`:
-```bash
-cp frontend/.env.example frontend/.env
+### 2. Configure environment variables
+
+Create `backend/.env`:
+
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string   # optional; leave empty to use the in-memory fallback
+LINKEDIN_ACCESS_TOKEN=your_linkedin_token  # optional; defaults are used if missing
+
+# Firebase Admin (from your service account JSON)
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_service_account_email
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
-Key variables:
-- `VITE_API_URL=http://localhost:5000`
-- `VITE_FIREBASE_API_KEY`: Firebase web API key.
-- `VITE_FIREBASE_AUTH_DOMAIN`: `your-app.firebaseapp.com`
-- `VITE_FIREBASE_PROJECT_ID`: `your-app-id`
 
----
+Create `frontend/.env`:
 
-### 3. Database Seeding
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+```
 
-The application automatically seeds the database on first start if empty. You can also run the idempotent seed script directly:
+> **Never commit `.env` files.** Make sure both are listed in `.gitignore`.
+
+### 3. (Optional) Seed a cloud database
+
+If you set `MONGO_URI`, load the sample data once:
 
 ```bash
 cd backend
-npm run seed
+node runSeed.js
 ```
 
-This seeds:
-- **5 Careers**: Data Scientist, UX Designer, Software Engineer, Product Manager, Technical Writer (with INR salary ranges, 2-phase roadmaps, accessibility accommodations, and skills grouped by importance).
-- **3 Diverse Mentors**:
-  - *Dr. Sarah Chen* (Staff Research Scientist @ DeepMind, she/her) — Women in Tech, First-gen Tech
-  - *Marcus Johnson* (Senior Product Designer @ Spotify, he/him) — Bootcamp Grads, Career Transitioners
-  - *Priya Patel* (Engineering Manager @ Stripe, they/them) — LGBTQ+, Neurodiversity Advocacy
+With the in-memory fallback, seeding happens automatically on startup.
 
----
+### 4. Run the app
 
-### 4. Running the Servers
+In one terminal:
 
-#### Terminal 1 — Backend API
 ```bash
 cd backend
-npm run dev
-# or: npm start
+node server.js
 ```
-The API starts at `http://localhost:5000`.
-- Health check: `http://localhost:5000/api/health`
-- Careers endpoint: `http://localhost:5000/api/careers`
-- Mentors endpoint: `http://localhost:5000/api/mentors`
 
-#### Terminal 2 — Frontend Client
+In another:
+
 ```bash
 cd frontend
 npm run dev
 ```
-The client starts at `http://localhost:5173`. Open your browser to explore the app!
 
----
+Open the URL Vite prints (usually http://localhost:5173) and sign in with Google.
 
-## 🔒 Firebase Authentication Setup
+## API Reference
 
-1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Create a project and enable **Authentication** > **Sign-in method** > **Google**.
-3. In Project Settings, add a Web App and copy the config values to `frontend/.env`.
-4. In Project Settings > Service Accounts, generate a new private key and paste the project ID, client email, and private key string into `backend/.env`.
-5. *Note*: The frontend also includes a 1-click **Demo Explorer Mode** that allows immediate local testing of the complete authenticated flow (profile sync, saving careers, booking sessions) even before configuring live Firebase keys.
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| GET | `/api/careers/matches` | No | Returns the top 3 careers. Query params: `analytical`, `creative`, `social`, `technical` (each 3 to 15). |
+| GET | `/api/mentors` | No | Returns all mentors. |
+| POST | `/api/users/sync` | Bearer Firebase ID token | Creates the user in MongoDB on first login, or returns the existing user. |
 
----
+## Data Models
 
-## ♿ Accessibility & DEI Standards
+- **CareerTrack**: title, description, salary range, demand level, remote-friendly flag, accessibility features, non-traditional welcome flag, DEI rating, ideal trait profile, roadmap phases and required skills.
+- **Mentor**: name, pronouns, role, company, years of experience, skills, mentorship focus and available slots.
+- **User**: name, email, Firebase UID, pronouns, accessibility needs, preferred language, quiz results, saved careers and booked sessions.
 
-- **Semantic landmarks**: Structured using `<header role="banner">`, `<nav aria-label="...">`, `<main id="main-content">`, `<fieldset>`, `<article>`, and `<footer role="contentinfo">`.
-- **Keyboard navigation**: Full tab sequencing, arrow navigation on radio groups, and `:focus-visible` glow rings.
-- **Screen Reader Support**: ARIA attributes on progress bars (`role="progressbar"`), Likert scale inputs, and dynamic live regions.
-- **Prefers Reduced Motion**: Animations respect OS-level motion preferences.
+## Roadmap / Future Work
 
+- Per-career roadmaps (the roadmap data is already in the database; the page currently shows a general 4-year timeline)
+- Save careers and book mentor sessions (schema support exists; UI and endpoints are next)
+- Store quiz results on the user profile
+- Move API URLs into an environment variable instead of `localhost:5000`
+- A `start` script and deployment configuration for the backend
+
+## License
+
+ISC
